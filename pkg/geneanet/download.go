@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	userAgent       = "GeneaNet v2.15 (Android 11 1080x2009@440)"
 	loginURL        = "https://www.geneanet.org/connexion/verify.php?ctype=id"
 	accountInfosURL = "https://www.geneanet.org/app/arbre/index.php?action=accountInfos&k=%s"
 	loggedURL       = "https://www.geneanet.org/app/arbre/index.php?action=logged"
@@ -69,7 +70,7 @@ func (g *Geneanet) Login(ctx context.Context) error {
 		return fmt.Errorf(errNewRequest, loginURL, err)
 	}
 
-	req.Header.Set("User-Agent", "GeneaNet v2.15 (Android 11 1080x2009@440)")
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	resp, err := g.client.Do(req)
@@ -116,7 +117,7 @@ func (g *Geneanet) GetAccountInfos(ctx context.Context) error {
 		return fmt.Errorf(errNewRequest, url, err)
 	}
 
-	req.Header.Set("User-Agent", "GeneaNet v2.15 (Android 11 1080x2009@440)")
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
@@ -160,7 +161,7 @@ func (g *Geneanet) SetLogged(ctx context.Context) error {
 		return fmt.Errorf(errNewRequest, loggedURL, err)
 	}
 
-	req.Header.Set("User-Agent", "GeneaNet v2.15 (Android 11 1080x2009@440)")
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
@@ -203,7 +204,7 @@ func (g *Geneanet) GetBase(ctx context.Context) error {
 		return fmt.Errorf(errNewRequest, importURL, err)
 	}
 
-	req.Header.Set("User-Agent", "GeneaNet v2.15 (Android 11 1080x2009@440)")
+	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
