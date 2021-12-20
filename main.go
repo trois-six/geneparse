@@ -19,6 +19,7 @@ func main() {
 	}
 
 	rootCmd.AddCommand((&cmd.DownloadAndExtractCmd{}).Command())
+	rootCmd.AddCommand((&cmd.GedcomCmd{}).Command())
 
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

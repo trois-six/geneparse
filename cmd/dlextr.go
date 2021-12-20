@@ -23,7 +23,7 @@ const (
 	errFailedDownload        = "failed to download the Geneanet bases: %w"
 )
 
-var errDirectoryRequired = errors.New("output directory MUST be a directory")
+var errOutputDirectoryRequired = errors.New("output directory MUST be a directory")
 
 type DownloadAndExtractCmd struct{}
 
@@ -97,7 +97,7 @@ func (c *DownloadAndExtractCmd) Run(username, password, outputDir string, timeou
 			return fmt.Errorf(errCreateOutputDir, err)
 		}
 	} else if !info.IsDir() {
-		return errDirectoryRequired
+		return errOutputDirectoryRequired
 	}
 
 	ctx := context.Background()

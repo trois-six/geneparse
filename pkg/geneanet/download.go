@@ -42,6 +42,9 @@ type Geneanet struct {
 	outputDir string
 	timeout   time.Duration
 	session   string
+	nbPersons uint32
+	sosa      uint32
+	timestamp int64
 }
 
 // New initialize a Geneanet.
