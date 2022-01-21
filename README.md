@@ -18,6 +18,7 @@ Usage:
 Available Commands:
   completion  generate the autocompletion script for the specified shell
   dlextr      download and extract Geneanet bases
+  gedcom      parse Geneanet bases and create a gedcom file
   help        Help about any command
 
 Flags:
@@ -37,6 +38,16 @@ Flags:
   -p, --password string    Password to log in to Geneanet (required)
   -t, --timeout string     Connection timeout for requests to Geneanet (default "10s")
   -u, --username string    Username or email address to log in to Geneanet (required)
+
+$ ./geneparse gedcom --help                                                                                                                                                     ✔  system  
+The gedcom command will parse Geneanet bases downloaded by the dlextr command and will create the corresponding gedcom file.
+
+Usage:
+  geneparse gedcom [flags]
+
+Flags:
+  -h, --help              help for gedcom
+  -i, --inputdir string   Input directory for Geneanet bases (default "output")
 ```
 
 ## Usage example
