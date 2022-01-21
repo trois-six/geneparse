@@ -1,13 +1,12 @@
 package cmd
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os"
 	"time"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet"
+	"github.com/Trois-Six/geneparse/pkg/geneanet/dlextr"
 	"github.com/spf13/cobra"
 )
 
@@ -21,6 +20,7 @@ const (
 	errFailedGetAccountInfos = "failed get account infos: %w"
 	errFailedSetLogged       = "failed set as logged: %w"
 	errFailedDownload        = "failed to download the Geneanet bases: %w"
+	errFailedExtract         = "failed to extract the Geneanet bases: %w"
 )
 
 var errOutputDirectoryRequired = errors.New("output directory MUST be a directory")
@@ -100,23 +100,26 @@ func (c *DownloadAndExtractCmd) Run(username, password, outputDir string, timeou
 		return errOutputDirectoryRequired
 	}
 
-	ctx := context.Background()
-	g := geneanet.New(username, password, outputDir, timeout)
+	d := dlextr.New(username, password, outputDir, timeout)
 
-	if err := g.Login(ctx); err != nil {
+	if err := d.Login(); err != nil {
 		return fmt.Errorf(errFailedLogin, err)
 	}
 
-	if err := g.GetAccountInfos(ctx); err != nil {
+	if err := d.GetAccountInfos(); err != nil {
 		return fmt.Errorf(errFailedGetAccountInfos, err)
 	}
 
-	if err := g.SetLogged(ctx); err != nil {
+	if err := d.SetLogged(); err != nil {
 		return fmt.Errorf(errFailedSetLogged, err)
 	}
 
-	if err := g.GetBase(ctx); err != nil {
+	if err := d.GetBase(); err != nil {
 		return fmt.Errorf(errFailedDownload, err)
+	}
+
+	if err := d.Unzip(); err != nil {
+		return fmt.Errorf(errFailedExtract, err)
 	}
 
 	return nil

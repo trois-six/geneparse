@@ -1,4 +1,4 @@
-package geneanet
+package dlextr
 
 import (
 	"archive/zip"
@@ -48,12 +48,12 @@ func extract(file *zip.File, fileDst string) error {
 	return nil
 }
 
-func unzip(r io.ReaderAt, size int64, dst string) error {
-	if err := os.MkdirAll(dst, os.ModePerm|os.ModeDir); err != nil {
+func (d *Download) Unzip() error {
+	if err := os.MkdirAll(d.outputDir, os.ModePerm|os.ModeDir); err != nil {
 		return fmt.Errorf(errCreateOutputDir, err)
 	}
 
-	zr, err := zip.NewReader(r, size)
+	zr, err := zip.NewReader(d.reader, d.size)
 	if err != nil {
 		return fmt.Errorf(errNewReader, err)
 	}
@@ -61,7 +61,7 @@ func unzip(r io.ReaderAt, size int64, dst string) error {
 	for _, file := range zr.File {
 		log.Printf("Processing file: %s", file.Name)
 
-		if err := extract(file, filepath.Join(dst, file.Name)); err != nil { //nolint:gosec
+		if err := extract(file, filepath.Join(d.outputDir, file.Name)); err != nil { //nolint:gosec
 			return fmt.Errorf(errExtractZip, err)
 		}
 	}

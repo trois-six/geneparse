@@ -11,4 +11,4 @@ vendor/
 .env
 .env.build
 geneparse
-output
+output*

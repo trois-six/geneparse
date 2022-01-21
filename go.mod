@@ -2,7 +2,10 @@ module github.com/Trois-Six/geneparse
 
 go 1.17
 
-require github.com/spf13/cobra v1.2.1
+require (
+	github.com/lunixbochs/struc v0.0.0-20200707160740-784aaebc1d40
+	github.com/spf13/cobra v1.3.0
+)
 
 require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect

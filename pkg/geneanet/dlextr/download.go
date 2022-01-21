@@ -1,4 +1,4 @@
-package geneanet
+package dlextr
 
 import (
 	"bytes"
@@ -35,21 +35,22 @@ var (
 	errLoginNoSessionCookie = errors.New("no session Cookie")
 )
 
-type Geneanet struct {
+type Download struct {
+	ctx       context.Context
 	client    http.Client
 	username  string
 	password  string
 	outputDir string
 	timeout   time.Duration
 	session   string
-	nbPersons uint32
-	sosa      uint32
-	timestamp int64
+	reader    *bytes.Reader
+	size      int64
 }
 
-// New initialize a Geneanet.
-func New(username, password, outputDir string, timeout time.Duration) *Geneanet {
-	return &Geneanet{
+// New initialize a Download.
+func New(username, password, outputDir string, timeout time.Duration) *Download {
+	return &Download{
+		ctx:       context.Background(),
 		client:    http.Client{},
 		username:  username,
 		password:  password,
@@ -58,14 +59,14 @@ func New(username, password, outputDir string, timeout time.Duration) *Geneanet 
 	}
 }
 
-func (g *Geneanet) Login(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, g.timeout)
+func (d *Download) Login() error {
+	ctx, cancel := context.WithTimeout(d.ctx, d.timeout)
 	defer cancel()
 
 	data := url.Values{
 		"persistent": {"1"},
-		"login":      {g.username},
-		"password":   {g.password},
+		"login":      {d.username},
+		"password":   {d.password},
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, loginURL, strings.NewReader(data.Encode()))
@@ -76,7 +77,7 @@ func (g *Geneanet) Login(ctx context.Context) error {
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := g.client.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return fmt.Errorf(errDoRequest, loginURL, err)
 	}
@@ -94,8 +95,8 @@ func (g *Geneanet) Login(ctx context.Context) error {
 
 	for _, cookie := range resp.Cookies() {
 		if cookie.Name == "gntsess" {
-			g.session = cookie.Value
-			log.Printf("Session cookie (gntsess) value: %s\n", g.session)
+			d.session = cookie.Value
+			log.Printf("Session cookie (gntsess) value: %s\n", d.session)
 
 			return nil
 		}
@@ -104,8 +105,8 @@ func (g *Geneanet) Login(ctx context.Context) error {
 	return errLoginNoSessionCookie
 }
 
-func (g *Geneanet) GetAccountInfos(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, g.timeout)
+func (d *Download) GetAccountInfos() error {
+	ctx, cancel := context.WithTimeout(d.ctx, d.timeout)
 	defer cancel()
 
 	randomBytes := make([]byte, randKLength)
@@ -122,13 +123,13 @@ func (g *Geneanet) GetAccountInfos(ctx context.Context) error {
 
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
+	req.AddCookie(&http.Cookie{Name: "gntsess", Value: d.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
 
 	// dumpReq, _ := httputil.DumpRequestOut(req, true)
 	// log.Printf("%s\n\n", dumpReq)
 
-	resp, err := g.client.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return fmt.Errorf(errDoRequest, url, err)
 	}
@@ -155,8 +156,8 @@ func (g *Geneanet) GetAccountInfos(ctx context.Context) error {
 	return nil
 }
 
-func (g *Geneanet) SetLogged(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, g.timeout)
+func (d *Download) SetLogged() error {
+	ctx, cancel := context.WithTimeout(d.ctx, d.timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, loggedURL, strings.NewReader(""))
@@ -166,13 +167,13 @@ func (g *Geneanet) SetLogged(ctx context.Context) error {
 
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
+	req.AddCookie(&http.Cookie{Name: "gntsess", Value: d.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
 
 	// dumpReq, _ := httputil.DumpRequestOut(req, true)
 	// log.Printf("%s\n\n", dumpReq)
 
-	resp, err := g.client.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return fmt.Errorf(errDoRequest, loggedURL, err)
 	}
@@ -194,8 +195,8 @@ func (g *Geneanet) SetLogged(ctx context.Context) error {
 	return nil
 }
 
-func (g *Geneanet) GetBase(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, g.timeout)
+func (d *Download) GetBase() error {
+	ctx, cancel := context.WithTimeout(d.ctx, d.timeout)
 	defer cancel()
 
 	data := url.Values{
@@ -209,13 +210,13 @@ func (g *Geneanet) GetBase(ctx context.Context) error {
 
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.AddCookie(&http.Cookie{Name: "gntsess", Value: g.session})
+	req.AddCookie(&http.Cookie{Name: "gntsess", Value: d.session})
 	req.AddCookie(&http.Cookie{Name: "$Version", Value: "1"})
 
 	// dumpReq, _ := httputil.DumpRequestOut(req, true)
 	// log.Printf("%s\n\n", dumpReq)
 
-	resp, err := g.client.Do(req)
+	resp, err := d.client.Do(req)
 	if err != nil {
 		return fmt.Errorf(errDoRequest, importURL, err)
 	}
@@ -227,12 +228,12 @@ func (g *Geneanet) GetBase(ctx context.Context) error {
 
 	buf := bytes.NewBuffer([]byte{})
 
-	size, err := io.Copy(buf, resp.Body)
+	d.size, err = io.Copy(buf, resp.Body)
 	if err != nil {
 		return fmt.Errorf(errIOCopy, err)
 	}
 
-	r := bytes.NewReader(buf.Bytes())
+	d.reader = bytes.NewReader(buf.Bytes())
 
-	return unzip(r, size, g.outputDir)
+	return nil
 }
