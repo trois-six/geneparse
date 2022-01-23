@@ -24,8 +24,11 @@ const (
 	// dateTypeBetween
 	// dateTypeBasedOnAge
 
-	errOpenFile = "could not open file: %w"
-	errReadFile = "could not read file: %w"
+	errOpen     = "could not open file: %w"
+	errRead     = "could not read file: %w"
+	errDaySep   = "invalid day separator: %#02x"
+	errMonthSep = "invalid month separator: %#02x"
+	errYear     = "could not read year: %w"
 
 	constUint32Size = 4
 
@@ -34,7 +37,7 @@ const (
 	constMonthSep             = 0x18
 )
 
-var errCouldNotParseNumber = errors.New("could not parse number")
+var errParse = errors.New("could not parse number")
 
 func FileExists(f string) bool {
 	_, err := os.Stat(f)
@@ -80,7 +83,7 @@ func ReadVarInt(r io.Reader) (int, error) {
 	i := 0
 	for i < constUint32Size {
 		if err := binary.Read(r, binary.BigEndian, &buf[i]); err != nil {
-			return 0, fmt.Errorf(errReadFile, err)
+			return 0, fmt.Errorf(errRead, err)
 		}
 
 		if buf[i]&constMSBByte != constMSBByte {
@@ -101,30 +104,36 @@ func ReadVarInt(r io.Reader) (int, error) {
 		return int(buf[3])<<7 + int(buf[2])<<7 + int(buf[1])<<7 + int(buf[0])&0x7f, nil
 	}
 
-	return 0, errCouldNotParseNumber
+	return 0, errParse
+}
+
+func ReadBool(r io.Reader) (bool, error) {
+	nb, err := ReadVarInt(r)
+
+	return nb != 0, err
 }
 
 func ReadDate(r io.Reader) (day, month, year int, err error) {
 	daySepMonthSep := make([]byte, constDaySepMonthSepLength)
 	if err = binary.Read(r, binary.BigEndian, &daySepMonthSep); err != nil {
-		return 0, 0, 0, fmt.Errorf(errReadFile, err)
+		return 0, 0, 0, fmt.Errorf(errRead, err)
 	}
 
 	day = int(daySepMonthSep[0])
 
 	if daySepMonthSep[1] != constDaySep {
-		return day, 0, 0, fmt.Errorf("invalid day separator: %#02x", daySepMonthSep[1])
+		return day, 0, 0, fmt.Errorf(errDaySep, daySepMonthSep[1])
 	}
 
 	month = int(daySepMonthSep[2])
 
 	if daySepMonthSep[3] != constMonthSep {
-		return day, month, 0, fmt.Errorf("invalid month separator: %#02x", daySepMonthSep[3])
+		return day, month, 0, fmt.Errorf(errMonthSep, daySepMonthSep[3])
 	}
 
 	year, err = ReadVarInt(r)
 	if err != nil {
-		return day, month, year, fmt.Errorf("could not get year: %w", err)
+		return day, month, year, fmt.Errorf(errYear, err)
 	}
 
 	return day, month, year, nil
@@ -133,12 +142,12 @@ func ReadDate(r io.Reader) (day, month, year int, err error) {
 func ReadString(r io.Reader) (string, error) {
 	var textLength byte
 	if err := binary.Read(r, binary.BigEndian, &textLength); err != nil {
-		return "", fmt.Errorf(errReadFile, err)
+		return "", fmt.Errorf(errRead, err)
 	}
 
 	text := make([]byte, textLength)
 	if err := binary.Read(r, binary.BigEndian, &text); err != nil {
-		return "", fmt.Errorf(errReadFile, err)
+		return "", fmt.Errorf(errRead, err)
 	}
 
 	return string(text), nil
@@ -147,12 +156,12 @@ func ReadString(r io.Reader) (string, error) {
 func ReadBytes(r io.Reader) ([]byte, error) {
 	var recordLength byte
 	if err := binary.Read(r, binary.BigEndian, &recordLength); err != nil {
-		return nil, fmt.Errorf(errReadFile, err)
+		return nil, fmt.Errorf(errRead, err)
 	}
 
 	record := make([]byte, recordLength)
 	if err := binary.Read(r, binary.BigEndian, &record); err != nil {
-		return record, fmt.Errorf(errReadFile, err)
+		return record, fmt.Errorf(errRead, err)
 	}
 
 	return record, nil
@@ -161,7 +170,7 @@ func ReadBytes(r io.Reader) ([]byte, error) {
 func ReadIdx(path string) (idx []uint, err error) {
 	fi, err := os.Open(path)
 	if err != nil {
-		return idx, fmt.Errorf(errOpenFile, err)
+		return idx, fmt.Errorf(errOpen, err)
 	}
 
 	defer fi.Close()
@@ -175,7 +184,7 @@ func ReadIdx(path string) (idx []uint, err error) {
 		}
 
 		if err != nil {
-			return idx, fmt.Errorf(errReadFile, err)
+			return idx, fmt.Errorf(errRead, err)
 		}
 
 		idx = append(idx, uint(offset))

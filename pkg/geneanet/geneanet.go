@@ -62,12 +62,19 @@ func (g *Geneanet) Parse() error {
 	// 	log.Printf("idx=%08d, offset=%08x", i, g.personidx[i])
 	// }
 
-	for i := uint(1000); i < 1030; i++ {
+	for i := uint(0); i < 200; i++ {
 		if _, err := person.GetPerson(i, g.personIdx[i]); err != nil {
 			return err
 		}
 		fmt.Printf("\n")
 	}
+
+	// for i := uint(1000); i < 1030; i++ {
+	// 	if _, err := person.GetPerson(i, g.personIdx[i]); err != nil {
+	// 		return err
+	// 	}
+	// 	fmt.Printf("\n")
+	// }
 
 	// if _, err := person.GetPerson(0, g.personIdx[0]); err != nil {
 	// 	return err

@@ -18,12 +18,14 @@ const (
 	constRecordJob             = 0x01
 	constRecordID              = 0x08
 	constRecordSex             = 0x10
+	constRecordCustomEvent     = 0x12
 	constRecordLastName        = 0x1a
 	constRecordChild           = 0x1a
 	constRecordFirstName       = 0x22
 	constUnknown7              = 0x22
 	constRecordExtendedInfo    = 0x28
 	constMarriageSrc           = 0x32
+	constMarriageNote          = 0x3f
 	constRecordSrc             = 0x3a
 	constRecordBaptismSrc      = 0x41
 	constRecordNickName        = 0x42
@@ -42,7 +44,11 @@ const (
 	constRecordDeathLocation   = 0x9a
 	constRecordDeathNote       = 0xa2
 	constUnknown4              = 0xa8
+	constRecordBurial          = 0xb2
+	constRecordBurialLocation  = 0xba
+	constRecordBurialNote      = 0xc2
 	constUnknown8              = 0xca
+	constRecordPersonSource    = 0xd2
 	constUnknown5              = 0xf0
 	constUnknown6              = 0xf8
 
@@ -192,12 +198,12 @@ func (b *BasePerson) GetPerson(id, offset uint) (*Person, error) {
 		case constRecordSex: // sex
 			log.Printf("read sex: %#02x", constRecordSex)
 
-			sex, err := utils.ReadVarInt(r)
+			sex, err := utils.ReadBool(r)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf(errRead, err)
 			}
 
-			p.sex = sex != 0
+			p.sex = sex
 		case constRecordLastName: // last name
 			log.Printf("read last name: %#02x", constRecordLastName)
 
@@ -454,12 +460,22 @@ func (b *BasePerson) GetPerson(id, offset uint) (*Person, error) {
 				return nil, fmt.Errorf(errRead, err)
 			}
 
-			unknown3, err := utils.ReadVarInt(r)
-			if err != nil {
-				return nil, fmt.Errorf(errRead, err)
-			}
+			switch tmp {
+			case 0x01:
+				unknown3, err := utils.ReadString(r)
+				if err != nil {
+					return nil, fmt.Errorf(errRead, err)
+				}
 
-			log.Printf("unknown3: %#v, %#v", tmp, unknown3)
+				log.Printf("unknown3: %#v, %#v", tmp, unknown3)
+			case 0x02:
+				unknown3, err := utils.ReadVarInt(r)
+				if err != nil {
+					return nil, fmt.Errorf(errRead, err)
+				}
+
+				log.Printf("unknown3: %#v, %#v", tmp, unknown3)
+			}
 		case constUnknown4: // unknown4
 			log.Printf("read unknown4: %#02x", constUnknown4)
 
@@ -544,6 +560,100 @@ func (b *BasePerson) GetPerson(id, offset uint) (*Person, error) {
 			}
 
 			log.Printf("read baptism source: %s", baptismSource)
+		case constRecordBurial: // burial
+			log.Printf("read burial: %#02x", constRecordBurial)
+
+			if err := binary.Read(r, binary.BigEndian, &tmp); err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("sep burial record: %#02x", tmp)
+
+			record, err := utils.ReadBytes(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			recordDate, err := ReadDateEvent(record)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("burial date: %s", recordDate)
+		case constRecordBurialLocation: // burial location
+			log.Printf("read burial location: %#02x", constRecordBurialLocation)
+
+			if err := binary.Read(r, binary.BigEndian, &tmp); err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("sep burial location: %#02x", tmp)
+
+			burialLocation, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("burial location: %s", burialLocation)
+		case constRecordBurialNote: // burial note
+			log.Printf("read burial note: %#02x", constRecordBurialNote)
+
+			if err := binary.Read(r, binary.BigEndian, &tmp); err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("sep burial note: %#02x", tmp)
+
+			burialNote, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("burial note: %s", burialNote)
+		case constRecordPersonSource: // person source
+			log.Printf("read person source: %#02x", constRecordPersonSource)
+
+			if err := binary.Read(r, binary.BigEndian, &tmp); err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("sep person source: %#02x", tmp)
+
+			personSource, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("person source: %s", personSource)
+		case constRecordCustomEvent: // custon event
+			log.Printf("read custon event: %#02x", constRecordCustomEvent)
+
+			eventName, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			if err := binary.Read(r, binary.BigEndian, &tmp); err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("sep custom event: %#02x", tmp)
+
+			eventValue, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("custom event name=%s, value=%s", eventName, eventValue)
+		case constMarriageNote: // marriage note
+			log.Printf("read marriage note: %#02x", constMarriageNote)
+
+			marriageNote, err := utils.ReadString(r)
+			if err != nil {
+				return nil, fmt.Errorf(errRead, err)
+			}
+
+			log.Printf("marriage note: %s", marriageNote)
 		default:
 			log.Printf("read unknown field %#02x, stop", recordType)
 
