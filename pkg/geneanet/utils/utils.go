@@ -6,38 +6,27 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
+	"strconv"
+
+	"github.com/elliotchance/gedcom"
 )
 
 const (
-	constMSBByte   = 0x80
-	constNum1Byte  = 0
-	constNum2Bytes = 1
-	constNum3Bytes = 2
-	constNum4Bytes = 3
+	ErrRead       = "could not read file: %w"
+	ErrParseInput = "could not parse input: %w"
 
-	dateTypeSure   = 0x00
-	dateTypeAbout  = 0x01
-	dateTypeMaybe  = 0x02
-	dateTypeBefore = 0x03
-	dateTypeAfter  = 0x04
-	// dateTypeOr
-	// dateTypeBetween
-	// dateTypeBasedOnAge
-
-	errOpen     = "could not open file: %w"
-	errRead     = "could not read file: %w"
-	errDaySep   = "invalid day separator: %#02x"
-	errMonthSep = "invalid month separator: %#02x"
-	errYear     = "could not read year: %w"
-
-	constUint32Size = 4
-
-	constDaySepMonthSepLength = 4
-	constDaySep               = 0x10
-	constMonthSep             = 0x18
+	ConstUint32Bytes = 4
+	ConstDecBase     = 10
+	constNoteMaxLen  = 71
 )
 
-var errParse = errors.New("could not parse number")
+var (
+	ErrFileMissing      = errors.New("file missing")
+	ErrFileMalFormatted = errors.New("file malformatted")
+	ErrDirDoesNotExist  = errors.New("directory does not exist")
+	ErrDirMustBeADir    = errors.New("directory must be a directory")
+)
 
 func FileExists(f string) bool {
 	_, err := os.Stat(f)
@@ -48,164 +37,117 @@ func FileExists(f string) bool {
 	return err == nil
 }
 
-//nolint
-func DumpByteSlice(b []byte) {
-	var a [16]byte
-	n := (len(b) + 15) &^ 15
-	for i := 0; i < n; i++ {
-		if i%16 == 0 {
-			fmt.Printf("%08x", i)
-		}
-		if i%8 == 0 {
-			fmt.Print(" ")
-		}
-		if i < len(b) {
-			fmt.Printf(" %02x", b[i])
-		} else {
-			fmt.Print("   ")
-		}
-		if i >= len(b) {
-			a[i%16] = ' '
-		} else if b[i] < 32 || b[i] > 126 {
-			a[i%16] = '.'
-		} else {
-			a[i%16] = b[i]
-		}
-		if i%16 == 15 {
-			fmt.Printf("  %s\n", string(a[:]))
-		}
+func ReadBytes(r io.Reader) (uint32, []byte, error) {
+	buf := make([]byte, ConstUint32Bytes)
+	if _, err := io.ReadFull(r, buf); err != nil {
+		return 0, nil, fmt.Errorf(ErrRead, err)
 	}
+
+	size := binary.BigEndian.Uint32(buf)
+
+	data := make([]byte, size)
+	if err := binary.Read(r, binary.BigEndian, &data); err != nil {
+		return 0, data, fmt.Errorf(ErrRead, err)
+	}
+
+	return ConstUint32Bytes + size, data, nil
 }
 
-func ReadVarInt(r io.Reader) (int, error) {
-	buf := make([]byte, constUint32Size)
-
-	i := 0
-	for i < constUint32Size {
-		if err := binary.Read(r, binary.BigEndian, &buf[i]); err != nil {
-			return 0, fmt.Errorf(errRead, err)
-		}
-
-		if buf[i]&constMSBByte != constMSBByte {
-			break
-		}
-
-		i++
-	}
-
-	switch i {
-	case constNum1Byte:
-		return int(buf[0]), nil
-	case constNum2Bytes:
-		return int(buf[1])<<7 + int(buf[0])&0x7f, nil
-	case constNum3Bytes:
-		return int(buf[2])<<7 + int(buf[1])<<7 + int(buf[0])&0x7f, nil
-	case constNum4Bytes:
-		return int(buf[3])<<7 + int(buf[2])<<7 + int(buf[1])<<7 + int(buf[0])&0x7f, nil
-	}
-
-	return 0, errParse
+func PointerStr(prefix string, id int32) string {
+	return prefix + strconv.FormatInt(int64(id), ConstDecBase)
 }
 
-func ReadBool(r io.Reader) (bool, error) {
-	nb, err := ReadVarInt(r)
-
-	return nb != 0, err
-}
-
-func ReadDate(r io.Reader) (day, month, year int, err error) {
-	daySepMonthSep := make([]byte, constDaySepMonthSepLength)
-	if err = binary.Read(r, binary.BigEndian, &daySepMonthSep); err != nil {
-		return 0, 0, 0, fmt.Errorf(errRead, err)
-	}
-
-	day = int(daySepMonthSep[0])
-
-	if daySepMonthSep[1] != constDaySep {
-		return day, 0, 0, fmt.Errorf(errDaySep, daySepMonthSep[1])
-	}
-
-	month = int(daySepMonthSep[2])
-
-	if daySepMonthSep[3] != constMonthSep {
-		return day, month, 0, fmt.Errorf(errMonthSep, daySepMonthSep[3])
-	}
-
-	year, err = ReadVarInt(r)
+func ReadIdx(fileFullPath string) (idx []uint32, err error) {
+	fi, err := os.Open(fileFullPath)
 	if err != nil {
-		return day, month, year, fmt.Errorf(errYear, err)
-	}
-
-	return day, month, year, nil
-}
-
-func ReadString(r io.Reader) (string, error) {
-	var textLength byte
-	if err := binary.Read(r, binary.BigEndian, &textLength); err != nil {
-		return "", fmt.Errorf(errRead, err)
-	}
-
-	text := make([]byte, textLength)
-	if err := binary.Read(r, binary.BigEndian, &text); err != nil {
-		return "", fmt.Errorf(errRead, err)
-	}
-
-	return string(text), nil
-}
-
-func ReadBytes(r io.Reader) ([]byte, error) {
-	var recordLength byte
-	if err := binary.Read(r, binary.BigEndian, &recordLength); err != nil {
-		return nil, fmt.Errorf(errRead, err)
-	}
-
-	record := make([]byte, recordLength)
-	if err := binary.Read(r, binary.BigEndian, &record); err != nil {
-		return record, fmt.Errorf(errRead, err)
-	}
-
-	return record, nil
-}
-
-func ReadIdx(path string) (idx []uint, err error) {
-	fi, err := os.Open(path)
-	if err != nil {
-		return idx, fmt.Errorf(errOpen, err)
+		return idx, fmt.Errorf("failed opening database index file: %w", err)
 	}
 
 	defer fi.Close()
 
-	for {
-		var offset uint32
+	buf := make([]byte, ConstUint32Bytes)
 
-		err = binary.Read(fi, binary.BigEndian, &offset)
+	for {
+		_, err = io.ReadFull(fi, buf)
 		if errors.Is(err, io.EOF) {
 			break
 		}
 
 		if err != nil {
-			return idx, fmt.Errorf(errRead, err)
+			return idx, fmt.Errorf(ErrRead, err)
 		}
 
-		idx = append(idx, uint(offset))
+		idx = append(idx, binary.BigEndian.Uint32(buf))
 	}
 
 	return idx, nil
 }
 
-func DateType(b byte) string {
-	switch b {
-	case dateTypeSure:
-		return "="
-	case dateTypeAbout:
-		return "~="
-	case dateTypeMaybe:
-		return "?"
-	case dateTypeBefore:
-		return "<"
-	case dateTypeAfter:
-		return ">"
-	default:
-		return "unknow date type"
+type NoteWithTag struct {
+	tag  gedcom.Tag
+	note string
+}
+
+func ExplodeNote(note string) []NoteWithTag {
+	m := regexp.MustCompile("(<[b|B][r|R][ ]?[/]?>[\n]?|\n)")
+	splitted := m.Split(note, -1)
+
+	notesWithTag := make([]NoteWithTag, len(splitted))
+	notesWithTag[0] = NoteWithTag{
+		tag:  gedcom.TagNote,
+		note: splitted[0],
 	}
+
+	if len(splitted) > 0 {
+		for k, note := range splitted[1:] {
+			notesWithTag[k+1] = NoteWithTag{
+				tag:  gedcom.TagContinued,
+				note: note,
+			}
+		}
+	}
+
+	final := make([]NoteWithTag, 0, len(splitted))
+
+	for _, note := range notesWithTag {
+		if len(note.note) == 0 {
+			final = append(final, note)
+
+			continue
+		}
+
+		var chuncks []NoteWithTag
+
+		runes := []rune(note.note)
+
+		for i := 0; i < len(runes); i += constNoteMaxLen {
+			end := i + constNoteMaxLen
+			if end > len(runes) {
+				end = len(runes)
+			}
+
+			chuncks = append(chuncks, NoteWithTag{
+				tag: func() gedcom.Tag {
+					if i > 0 {
+						return gedcom.TagConcatenation
+					}
+
+					return note.tag
+				}(),
+				note: string(runes[i:end]),
+			})
+		}
+
+		final = append(final, chuncks...)
+	}
+
+	return final
+}
+
+func (n *NoteWithTag) GetTag() gedcom.Tag {
+	return n.tag
+}
+
+func (n *NoteWithTag) GetNote() string {
+	return n.note
 }

@@ -17,6 +17,7 @@ clean:
 
 build: clean
 	@echo Version: $(VERSION) $(BUILD_DATE)
+	protoc --go_out=pkg/geneanet pkg/geneanet/api.proto
 	CGO_ENABLED=0 go build -v -ldflags '-X "main.version=${VERSION}" -X "main.commit=${SHA}" -X "main.date=${BUILD_DATE}"'
 
 image:

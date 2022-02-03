@@ -1,5 +1,10 @@
 [run]
   deadline = "2m"
+  skip-dirs = [
+    "output",
+    "disasm",
+    "api",
+  ]
 
 [linters-settings]
   [linters-settings.govet]
@@ -17,12 +22,14 @@
 [linters]
   enable-all = true
   disable = [
-    "interfacer",
     "exhaustivestruct",
-    "maligned",
-    "scopelint",
-    "tparallel",
-    "paralleltest",
+    "godox",
   ]
 
 [issues]
+  [[issues.exclude-rules]]
+  path    = "pkg/geneanet/database/(family|person).go"
+  linters = [
+    "dupl",
+  ]
+

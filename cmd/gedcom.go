@@ -1,20 +1,13 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
 	"github.com/Trois-Six/geneparse/pkg/geneanet"
+	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
 	"github.com/spf13/cobra"
 )
-
-const (
-	errInputDirNotExits = "input directory does not exist: %w"
-	errFailedParse      = "failed to parse Geneanet: %w"
-)
-
-var errInputDirectoryRequired = errors.New("input directory MUST be a directory")
 
 type GedcomCmd struct{}
 
@@ -29,7 +22,7 @@ func (c *GedcomCmd) Command() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) (err error) {
 			i, err := cmd.Flags().GetString("inputdir")
 			if err != nil {
-				return fmt.Errorf(errParseInput, err)
+				return fmt.Errorf("could not parse input: %w", err)
 			}
 
 			return c.Run(i)
@@ -48,18 +41,18 @@ func (c *GedcomCmd) Command() *cobra.Command {
 func (c *GedcomCmd) Run(inputDir string) error {
 	info, err := os.Stat(inputDir)
 	if err != nil {
-		return fmt.Errorf(errInputDirNotExits, err)
+		return fmt.Errorf("input directory does not exist: %w", err)
 	} else if !info.IsDir() {
-		return errInputDirectoryRequired
+		return fmt.Errorf("%w: %s", utils.ErrDirMustBeADir, inputDir)
 	}
 
 	g, err := geneanet.New(inputDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to initialize Geneanet: %w", err)
 	}
 
 	if err = g.Parse(); err != nil {
-		return fmt.Errorf(errFailedParse, err)
+		return fmt.Errorf("failed to parse Geneanet: %w", err)
 	}
 
 	return nil
