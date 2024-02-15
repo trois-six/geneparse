@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/dlextr"
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet/dlextr"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 	"github.com/spf13/cobra"
 )
 

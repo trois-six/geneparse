@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/Trois-Six/geneparse/cmd"
+	"github.com/trois-six/geneparse/cmd"
 	"github.com/spf13/cobra"
 )
 

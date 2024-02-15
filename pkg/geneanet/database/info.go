@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 )
 
 type BaseInfo struct {

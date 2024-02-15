@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/api"
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet/api"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 	"github.com/elliotchance/gedcom"
 )
 
@@ -132,7 +132,7 @@ func getEmptyDocument(name string) *gedcom.Document {
 			gedcom.NewNode(gedcom.TagName, "GEDCOM computed file from a Geneanet Tree", ""),
 			gedcom.NewNode(gedcom.TagVersion, "5.5.5", ""),
 			gedcom.NewNode(gedcom.TagCorporate, "geneparse", "",
-				gedcom.NewNode(gedcom.TagWWW, "https://github.com/Trois-Six/geneparse", ""),
+				gedcom.NewNode(gedcom.TagWWW, "https://github.com/trois-six/geneparse", ""),
 			),
 		),
 		gedcom.NewNode(gedcom.TagDate, currentTime.Format("02 Jan 2006"), "",

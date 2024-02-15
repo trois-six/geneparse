@@ -1,4 +1,4 @@
-module github.com/Trois-Six/geneparse
+module github.com/trois-six/geneparse
 
 go 1.17
 

@@ -3,7 +3,7 @@ package database
 import (
 	"fmt"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/api"
+	"github.com/trois-six/geneparse/pkg/geneanet/api"
 	"google.golang.org/protobuf/proto"
 )
 

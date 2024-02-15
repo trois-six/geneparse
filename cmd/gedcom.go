@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet"
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 	"github.com/spf13/cobra"
 )
 

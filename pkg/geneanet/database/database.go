@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 )
 
 type Database interface {

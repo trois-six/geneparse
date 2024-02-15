@@ -3,9 +3,9 @@ package geneanet
 import (
 	"fmt"
 
-	"github.com/Trois-Six/geneparse/pkg/geneanet/database"
-	"github.com/Trois-Six/geneparse/pkg/geneanet/gengedcom"
-	"github.com/Trois-Six/geneparse/pkg/geneanet/utils"
+	"github.com/trois-six/geneparse/pkg/geneanet/database"
+	"github.com/trois-six/geneparse/pkg/geneanet/gengedcom"
+	"github.com/trois-six/geneparse/pkg/geneanet/utils"
 )
 
 type Geneanet struct {
